@@ -40,8 +40,6 @@ after_install = "erpnext.setup.install.after_install"
 boot_session = "erpnext.startup.boot.boot_session"
 notification_config = "erpnext.startup.notifications.get_notification_config"
 get_help_messages = "erpnext.utilities.activation.get_help_messages"
-get_user_progress_slides = "erpnext.utilities.user_progress.get_user_progress_slides"
-update_and_get_user_progress = "erpnext.utilities.user_progress_utils.update_default_domain_actions_and_get_state"
 leaderboards = "erpnext.startup.leaderboard.get_leaderboards"
 
 
@@ -57,11 +55,7 @@ treeviews = ['Account', 'Cost Center', 'Warehouse', 'Item Group', 'Customer Grou
 update_website_context = ["erpnext.shopping_cart.utils.update_website_context", "erpnext.education.doctype.education_settings.education_settings.update_website_context"]
 my_account_context = "erpnext.shopping_cart.utils.update_my_account_context"
 
-email_append_to = ["Job Applicant", "Lead", "Opportunity", "Issue"]
-
 calendars = ["Task", "Work Order", "Leave Application", "Sales Order", "Holiday List", "Course Schedule"]
-
-
 
 domains = {
 	'Agriculture': 'erpnext.domains.agriculture',
@@ -182,6 +176,7 @@ standard_portal_menu_items = [
 	{"title": _("Admission"), "route": "/admissions", "reference_doctype": "Student Admission", "role": "Student"},
 	{"title": _("Certification"), "route": "/certification", "reference_doctype": "Certification Application", "role": "Non Profit Portal User"},
 	{"title": _("Material Request"), "route": "/material-requests", "reference_doctype": "Material Request", "role": "Customer"},
+	{"title": _("Appointment Booking"), "route": "/book_appointment"},
 ]
 
 default_roles = [
@@ -244,14 +239,14 @@ doc_events = {
 		"on_trash": "erpnext.regional.check_deletion_permission"
 	},
 	"Payment Entry": {
-		"on_submit": ["erpnext.regional.create_transaction_log", "erpnext.accounts.doctype.payment_request.payment_request.make_status_as_paid"],
+		"on_submit": ["erpnext.regional.create_transaction_log", "erpnext.accounts.doctype.payment_request.payment_request.update_payment_req_status"],
 		"on_trash": "erpnext.regional.check_deletion_permission"
 	},
 	'Address': {
-		'validate': ['erpnext.regional.india.utils.validate_gstin_for_india', 'erpnext.regional.italy.utils.set_state_code']
+		'validate': ['erpnext.regional.india.utils.validate_gstin_for_india', 'erpnext.regional.italy.utils.set_state_code', 'erpnext.regional.india.utils.update_gst_category']
 	},
-	('Sales Invoice', 'Purchase Invoice', 'Delivery Note'): {
-		'validate': 'erpnext.regional.india.utils.set_place_of_supply'
+	('Sales Invoice', 'Sales Order', 'Delivery Note', 'Purchase Invoice', 'Purchase Order', 'Purchase Receipt'): {
+		'validate': ['erpnext.regional.india.utils.set_place_of_supply']
 	},
 	"Contact": {
 		"on_trash": "erpnext.support.doctype.issue.issue.update_issue",
@@ -264,6 +259,13 @@ doc_events = {
 		"after_insert": "erpnext.crm.doctype.email_campaign.email_campaign.unsubscribe_recipient"
 	}
 }
+
+# On cancel event Payment Entry will be exempted and all linked submittable doctype will get cancelled.
+# to maintain data integrity we exempted payment entry. it will un-link when sales invoice get cancelled.
+# if payment entry not in auto cancel exempted doctypes it will cancel payment entry.
+auto_cancel_exempted_doctypes= [
+	"Payment Entry"
+]
 
 scheduler_events = {
 	"all": [
@@ -301,18 +303,22 @@ scheduler_events = {
 		"erpnext.quality_management.doctype.quality_review.quality_review.review",
 		"erpnext.support.doctype.service_level_agreement.service_level_agreement.check_agreement_status",
 		"erpnext.crm.doctype.email_campaign.email_campaign.send_email_to_leads_or_contacts",
-		"erpnext.crm.doctype.email_campaign.email_campaign.set_email_campaign_status"
+		"erpnext.crm.doctype.email_campaign.email_campaign.set_email_campaign_status",
+		"erpnext.selling.doctype.quotation.quotation.set_expired_status"
 	],
 	"daily_long": [
 		"erpnext.setup.doctype.email_digest.email_digest.send",
 		"erpnext.manufacturing.doctype.bom_update_tool.bom_update_tool.update_latest_price_in_all_boms",
 		"erpnext.hr.doctype.leave_ledger_entry.leave_ledger_entry.process_expired_allocation",
-		"erpnext.hr.utils.generate_leave_encashment"
+		"erpnext.hr.utils.generate_leave_encashment",
+		"erpnext.loan_management.doctype.loan_security_shortfall.loan_security_shortfall.check_for_ltv_shortfall",
+		"erpnext.loan_management.doctype.loan_interest_accrual.loan_interest_accrual.make_accrual_interest_entry_for_term_loans"
 	],
 	"monthly_long": [
 		"erpnext.accounts.deferred_revenue.convert_deferred_revenue_to_income",
 		"erpnext.accounts.deferred_revenue.convert_deferred_expense_to_expense",
-		"erpnext.hr.utils.allocate_earned_leaves"
+		"erpnext.hr.utils.allocate_earned_leaves",
+		"erpnext.loan_management.doctype.loan_interest_accrual.loan_interest_accrual.process_loan_interest_accrual"
 	]
 }
 

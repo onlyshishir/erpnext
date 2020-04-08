@@ -22,7 +22,7 @@ class AssetMovement(Document):
 			if company != self.company:
 				frappe.throw(_("Asset {0} does not belong to company {1}").format(d.asset, self.company))
 
-			if not(d.source_location or d.target_location or d.from_employee or d.to_employee):
+			if not (d.source_location or d.target_location or d.from_employee or d.to_employee):
 				frappe.throw(_("Either location or employee must be required"))
 
 	def validate_location(self):
@@ -110,7 +110,7 @@ class AssetMovement(Document):
 				ORDER BY
 					asm.transaction_date asc
 				""", (d.asset, self.company, 'Receipt'), as_dict=1)
-			if auto_gen_movement_entry[0].get('name') == self.name:
+			if auto_gen_movement_entry and auto_gen_movement_entry[0].get('name') == self.name:
 				frappe.throw(_('{0} will be cancelled automatically on asset cancellation as it was \
 					auto generated for Asset {1}').format(self.name, d.asset))
 
